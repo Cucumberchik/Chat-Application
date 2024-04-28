@@ -12,7 +12,7 @@ const Dashboard = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false);
-  console.log(message);
+  console.log(authUser);
 
 
   useEffect(() => {
