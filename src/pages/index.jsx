@@ -27,9 +27,9 @@ const uiConfig = {
 };
 
 const Index = () => {
+  let {authUser} = useAuth()
   const UI = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
   const [login, setLogin] = useState(false);
-  let {authUser} = useAuth()
 
   const onAuthenticate = () => {
     setLogin(true);
@@ -46,10 +46,11 @@ const Index = () => {
       }
     checkUser(userData)
   };
+
   useEffect(()=>{
     handleUsersList()
   },[])
-
+  
   return (
     <Container>
       <Box padding="5rem">
