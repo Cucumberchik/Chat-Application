@@ -5,8 +5,8 @@ import "firebase/compat/auth";
 import * as firebaseui from "firebaseui";
 import "firebaseui/dist/firebaseui.css";
 import { auth } from "../firebase";
-import { useAuth } from "../hooks/useAuth";
 import { checkUser } from "../firebase/firestore";
+import { useAuth } from "../hooks/useAuth";
 
 // Configure FirebaseUI.
 const uiConfig = {
@@ -37,16 +37,16 @@ const Index = () => {
       UI.start("#firebaseui-auth-container", uiConfig);
     });
   };
-
   const handleUsersList = () => {
     const userData = {
-        displayName : authUser.displayName,
-        email : authUser.email,
-        photoURL : authUser.photoURL,
-        uid : authUser.uid
+        displayName : authUser?.displayName,
+        email : authUser?.email,
+        photoURL : authUser?.photoURL,
+        uid : authUser?.uid
       }
     checkUser(userData)
   };
+
   useEffect(()=>{
     handleUsersList()
   },[])
