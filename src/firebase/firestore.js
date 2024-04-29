@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs } from "firebase/firestore"
+import { addDoc, collection, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore"
 import { db } from "."
 
 
@@ -48,39 +48,54 @@ export const onMessageCommunication = async () => {
         
     return messageCommunicationRef;
 }
-export const listUserMessage = async() => {
+export const listUserMessage = async(uid, userId, setMessages) => {
     const ref = collection(db, "telegram")
     let querySnapshot = await getDocs(ref);
     let list = [];
     querySnapshot.forEach((doc) => {
-        list.push({...doc.data(), docId: doc.id})
-    });
-
-    console.log(list);
-}
-
-export const senMessage = async (uid, userId, message) => {
-    const ref = collection(db, "telegram");
-    let querySnapshot = await getDocs(ref);
-    let list = [];
-    querySnapshot.forEach((doc) => {
         list.push({...doc.data(), communication: doc.id})
-    })
-    
+    });
     const messageMap = list.find((el) => {
-        let chat = el.communication.split('#')
+        let chat = el.communication.split('-')
         return chat.includes(uid) && chat.includes(userId)
     });
-    if(messageMap){
+    if(!messageMap) {setMessages(`telegram/${uid}-${userId}`)};
+    setMessages(`telgram/${messageMap.communication}`)
+}
 
+export const senMessage = async (uid, userId, message, setLoading) => {
+    
+    const ref = collection(db, "telegram");
+    let querySnapshot = await getDocs(ref);
+    let messageMap = null;
+    
+    querySnapshot.forEach((doc) => {
+        let communication = doc.id.split('-')
+        if (communication.includes(uid) && communication.includes(userId)) {
+            messageMap = { communication: doc.id, ...doc.data() };
+        }
+    });
+    if (messageMap) {
         const val = doc(db, "telegram", messageMap.communication);
-        const collectionMessage = collection(val, "messages");
-    
-        await addDoc(collectionMessage, message)
+        try {
+            setLoading(true)
+            await updateDoc(val, {
+                messages: [...messageMap.messages, message]
+            });
+            
+        } catch (error) {
+        }finally{
+            setLoading(false)
+        }
+
         return;
-    }
-    const val = doc(db, "telegram",  `${uid}#${userId}`);
-        const collectionMessage = collection(val, "messages");
+    } 
+        const val = doc(db, "telegram", `${uid}-${userId}`);
+        try {
+            await setDoc(val, { messages: [message] });
+        } catch (error) {
+        }finally{
+            setLoading(false)
+        }
     
-        await addDoc(collectionMessage, message)
 }

@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { listUserMessage, senMessage } from '../firebase/firestore';
 import { collection, doc, getDocs, onSnapshot } from 'firebase/firestore';
 import {  db } from '../firebase';
+import { logEvent } from 'firebase/analytics';
 
 export default function Chat({type, messanger}) {
     let {authUser} = useAuth();
@@ -14,11 +15,8 @@ export default function Chat({type, messanger}) {
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [listUserMessages, setUserMessages] = useState({});
+    const [listUserMessages, setUserMessages] = useState('');
 
-
-
-    
 
     const onSendMessage = () => {
         if(!message) return;
@@ -29,39 +27,29 @@ export default function Chat({type, messanger}) {
             contant: message,
             date: new Date()
         }
-        senMessage(authUser.uid, messanger.uid, messageObj)
+        senMessage(authUser.uid, messanger.uid, messageObj, setLoading)
     }
-    const fetchData = async () => {
-
-
-        // if (messageMap) {
-        //   const val = doc(db, "user_messanger", messageMap?.communication);
-        //   const collectionMessage = collection(val, "messages");
-    
-        //   const unsubscribe = onSnapshot(collectionMessage, (snapshots) => {
-        //     const list = [];
-        //     snapshots.forEach((doc) => {
-        //       const message = doc.data();
-        //       list.push(message);
-        //     });
-        //     console.log(list);
-        //     setMessages(list.sort((a, b) => a?.date?.seconds - b?.date?.seconds));
-            
-        //   });
-        //   return () => {
-        //     unsubscribe();
-        //   };
-        // }
-        console.log(listUserMessages);
-
+    const onMessageSnapshot = async () => {
+      // Создаем ссылку на документ с помощью идентификаторов коллекции и документа из массива links
+      const docRef = collection(db, "telegram");
+  
+      const unsubscribe = onSnapshot(docRef, (snapshots) => {
+          const list = [];
+          snapshots.forEach((doc) => {
+              list.push(...doc.data().messages);
+          });
+          setMessages(list);
+      });
+      // .sort((a, b) => a?.date?.seconds - b?.date?.seconds)
+      return ()=> {
+        unsubscribe()
       };
-
+  }
     useEffect(() => {
-        listUserMessage(authUser.uid, messanger?.uid, setUserMessages)
-        
-          fetchData()
+      listUserMessage(authUser.uid, messanger.uid, setUserMessages);
+      onMessageSnapshot()
     }, []);
-      
+      console.log(messages);
       
   return (
     <Box display='flex'  flex={3} flexDirection="column">
@@ -71,36 +59,36 @@ export default function Chat({type, messanger}) {
             flexDirection="column"
             maxHeight="85vh"
             padding={1}>
-              {messages.map((el, id) => {
+              {messages.length == 0 ? "Здесь пусто" : messages.map((el, id) => {
 
-              if(el.uid !== authUser.uid){
-                return <Box key={id} 
-                display="flex"
-                gap={1}
-                alignItems="center"
-                boxShadow={1}
-                padding={1}
-                mb={2}
-                sx={{ backgroundColor:  "#ffffff" }}
-              >
-                <Avatar alt={el?.displayName} src={el?.photoURL} />
-                <Typography>{el.content.slice(0, 40)}</Typography>
-              </Box>
-              }
-              return <Box key={id} 
-              display="flex"
-              gap={1}
-              alignItems="center"
-              justifyContent='flex-end'
-              boxShadow={1}
-              padding={1}
-              mb={2}
-              sx={{ backgroundColor:  "#bdd2e6"}}
-            >
-              <Typography>{el.content.slice(0, 40)}</Typography>
-              <Avatar alt={el?.displayName} src={el?.photoURL} />
-            </Box>
-})}
+          if(el.uid !== authUser.uid){
+            return <Box key={id} 
+            display="flex"
+            gap={1}
+            alignItems="center"
+            boxShadow={1}
+            padding={1}
+            mb={2}
+            sx={{ backgroundColor:  "#ffffff" }}
+          >
+            <Avatar alt={el?.displayName} src={el?.photoURL} />
+            <Typography>{el.contant}</Typography>
+          </Box>
+          }
+          return <Box key={id} 
+          display="flex"
+          gap={1}
+          alignItems="center"
+          justifyContent='flex-end'
+          boxShadow={1}
+          padding={1}
+          mb={2}
+          sx={{ backgroundColor:  "#bdd2e6"}}
+          >
+          <Typography>{el.contant}</Typography>
+          <Avatar alt={el?.displayName} src={el?.photoURL} />
+          </Box>
+          })}
 
         </Box>
         <div id="end"></div>
