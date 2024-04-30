@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 export const Card = ( { data, onClick}) => {
     let {authUser} = useAuth()
   return (
-    <ListItem onClick={()=>onClick(data)} sx={{display: data.uid === authUser.uid ? "none" : 'flex'}} disablePadding  >
+    <ListItem  onClick={()=>onClick(data)} sx={{display: data.uid === authUser.uid ? "none" : 'flex',}} disablePadding  >
         <ListItemButton>
             <ListItemAvatar>
                 <Avatar
