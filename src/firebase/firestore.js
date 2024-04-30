@@ -29,25 +29,7 @@ export const checkUser = async(data) =>{
     //Если не истина то мы добавляем пользователя в коллекцию
     await addDoc(collection(db, 'users'), data);
 }
-export const onMessageCommunication = async () => {
-    const ref = collection(db, "messages");
-    let querySnapshot = await getDocs(ref);
-    let list = [];
-    querySnapshot.forEach((doc) => {
-        list.push({...doc.data(), communication: doc.id})
-    })
-    
-    const messageMap = list.find((el) => {
-        let chat = el.communication.split('#')
-        return chat.includes('John') && chat.includes('Alice');
-    });
-    
-    if (!messageMap) return; 
-    
-    const messageCommunicationRef = doc(db, "telegram", messageMap.communication);
-        
-    return messageCommunicationRef;
-}
+
 export const listUserMessage = async(uid, userId, setMessages) => {
     const ref = collection(db, "telegram")
     let querySnapshot = await getDocs(ref);
@@ -60,11 +42,10 @@ export const listUserMessage = async(uid, userId, setMessages) => {
         return chat.includes(uid) && chat.includes(userId)
     });
     if(!messageMap) {setMessages(`telegram/${uid}-${userId}`)};
-    setMessages(`telgram/${messageMap.communication}`)
+    setMessages(messageMap?.communication)
 }
 
-export const senMessage = async (uid, userId, message, setLoading) => {
-    
+export const sendMessage = async (uid, userId, message, setLoading) => {
     const ref = collection(db, "telegram");
     let querySnapshot = await getDocs(ref);
     let messageMap = null;
@@ -75,6 +56,7 @@ export const senMessage = async (uid, userId, message, setLoading) => {
             messageMap = { communication: doc.id, ...doc.data() };
         }
     });
+    console.log(messageMap);
     if (messageMap) {
         const val = doc(db, "telegram", messageMap.communication);
         try {
@@ -96,6 +78,6 @@ export const senMessage = async (uid, userId, message, setLoading) => {
         } catch (error) {
         }finally{
             setLoading(false)
-        }
+    }
     
 }

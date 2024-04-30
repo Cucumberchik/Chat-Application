@@ -4,20 +4,22 @@ import Send from '@mui/icons-material/Send';
 import { Avatar, Box, Button, CircularProgress, TextField, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth';
-import { listUserMessage, senMessage } from '../firebase/firestore';
-import { collection, doc, getDocs, onSnapshot } from 'firebase/firestore';
+import {  listUserMessage, sendMessage } from '../firebase/firestore';
+import { collection,  onSnapshot } from 'firebase/firestore';
 import {  db } from '../firebase';
-import { logEvent } from 'firebase/analytics';
+import { Navigate, useNavigate } from 'react-router-dom';
 
-export default function Chat({type, messanger}) {
+export default function Chat({ messanger}) {
+  let navigate = useNavigate()
+  
     let {authUser} = useAuth();
-
+    
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [listUserMessages, setUserMessages] = useState('');
+    const [links, setLinks] = useState('')
 
-
+  
     const onSendMessage = () => {
         if(!message) return;
         const messageObj = {
@@ -27,73 +29,94 @@ export default function Chat({type, messanger}) {
             contant: message,
             date: new Date()
         }
-        senMessage(authUser.uid, messanger.uid, messageObj, setLoading)
+        sendMessage(authUser.uid, messanger.uid, messageObj, setLoading)
+        setMessage('')
     }
+    
     const onMessageSnapshot = async () => {
-      // Создаем ссылку на документ с помощью идентификаторов коллекции и документа из массива links
       const docRef = collection(db, "telegram");
   
       const unsubscribe = onSnapshot(docRef, (snapshots) => {
           const list = [];
           snapshots.forEach((doc) => {
-              list.push(...doc.data().messages);
+            if(doc.id == links) {
+            list.push(...doc.data().messages);
+          };
           });
-          setMessages(list);
+          setMessages(list.sort((a, b) => a?.date?.seconds - b?.date?.seconds));
       });
-      // .sort((a, b) => a?.date?.seconds - b?.date?.seconds)
       return ()=> {
         unsubscribe()
       };
   }
-    useEffect(() => {
-      listUserMessage(authUser.uid, messanger.uid, setUserMessages);
-      onMessageSnapshot()
-    }, []);
-      console.log(messages);
-      
+  useEffect(()=>{
+    listUserMessage(authUser.uid, messanger.uid, setLinks)
+    onMessageSnapshot();
+    navigate("#end")
+
+  },[messanger, links]);
+
+  useEffect(() => {
+    onMessageSnapshot()
+    listUserMessage(authUser.uid, messanger.uid, setLinks)
+    navigate("#end")
+  }, []);
+    
   return (
-    <Box display='flex'  flex={3} flexDirection="column">
+    <Box display='flex'  flex={3} flexDirection="column" >
+      <Box display='flex'  position="fixed" sx={{bgcolor: '#222222', width: "100%", p: "10px 15px", zIndex: "100"}}>
+      <Typography>{messanger.displayName}</Typography>
+      </Box>
         <Box display="flex"
             flex={1}
-            sx={{ overflow: "scroll"}}
+            sx={{ overflow: "scroll", p: "2em 0"}}
             flexDirection="column"
             maxHeight="85vh"
-            padding={1}>
+
+            >
+        
               {messages.length == 0 ? "Здесь пусто" : messages.map((el, id) => {
 
           if(el.uid !== authUser.uid){
             return <Box key={id} 
             display="flex"
             gap={1}
-            alignItems="center"
+            flexDirection='column'
             boxShadow={1}
-            padding={1}
-            mb={2}
-            sx={{ backgroundColor:  "#ffffff" }}
+            padding={2}
+            mb={1}
+            sx={{ bgcolor:  "none", boxShadow: "none" }}
           >
-            <Avatar alt={el?.displayName} src={el?.photoURL} />
-            <Typography>{el.contant}</Typography>
+              <Box display="flex" gap={2}>
+                <Avatar alt={el?.displayName} src={el?.photoURL} />
+                <Typography variant="subtitle1" color="#67A5EB" sx={{cursor:"pointer"}} >{el.displayName}</Typography>
+              </Box>
+            <Typography sx={{p:"0px 45px"}}>{el.contant}</Typography>
           </Box>
           }
           return <Box key={id} 
           display="flex"
           gap={1}
-          alignItems="center"
+          flexDirection='column'
           justifyContent='flex-end'
           boxShadow={1}
-          padding={1}
-          mb={2}
-          sx={{ backgroundColor:  "#bdd2e6"}}
+          padding={2}
+          mb={1}
+          sx={{ bgcolor:  "none", boxShadow: "none"}}
           >
-          <Typography>{el.contant}</Typography>
-          <Avatar alt={el?.displayName} src={el?.photoURL} />
+            <Box display="flex" gap={2}>
+              <Avatar alt={el?.displayName} src={el?.photoURL} />
+              <Typography variant="subtitle1" color="#67A5EB" sx={{cursor:"pointer"}} >{el.displayName}</Typography>
+            </Box>
+          <Typography sx={{p:"0px 45px"}}>{el.contant}</Typography>
+          
           </Box>
           })}
 
         </Box>
         <div id="end"></div>
         <Box display='flex' alignItems='center' >
-          <TextField sixe='small' value={message} onChange={(e)=>setMessage(e.target.value)} fullWidth id="outlined-basic" label="Message.." variant="outlined" />
+          <TextField  sixe='small' value={message} onChange={(e)=>setMessage(e.target.value)} fullWidth id="outlined-basic" label="Message.." variant="outlined" />
           <Button onClick={onSendMessage} disabled={loading} variant="contained" endIcon={loading ? <CircularProgress /> : <Send />}>
             Send
             </Button>
